@@ -137,7 +137,7 @@ def output(request):
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)')
     plt.savefig('tr/static/tr/graph.png')
-#    image = img.imread('tr/static/tr/' + package + '.png')
+    image = img.imread('tr/static/tr/' + package + '.png')
 #    image = img.imread('staticfiles/tr/'+ package + '.png')
     img.imsave('tr/static/tr/chosen.png',image)
  
