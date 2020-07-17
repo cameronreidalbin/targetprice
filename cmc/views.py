@@ -14,6 +14,10 @@ def getDistance(i1,i2,m1,m2,q1,q2):
     return ((i1-i2)**2 + (m1-m2)**2 + (q1-q2)**2)**(1/2)
  
 sizeDict = {'XS': 1680, 'S': 5544, 'M': 11262, 'L': 15960, 'XL': 28934, 'XXL': 59616}
+
+for size in sizeDict:
+    image = img.imread('staticfiles/cmc/'+size+'.png')
+    img.imsave('cmc/static/cmc/'+size+'.png', image)
  
 def input(request):
     return render(request, 'cmc/input.html')
