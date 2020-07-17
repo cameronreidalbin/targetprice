@@ -27,7 +27,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '+5z2gp7qmi*pexr3*hl62^d8oxw)lp
 # DEBUG = True
 DEBUG = os.environ.get('DJANGO_DEBUG', '') != 'False'
 
-ALLOWED_HOSTS = ['targetprice.herokuapp.com','127.0.0.8']
+ALLOWED_HOSTS = ['targetprice.herokuapp.com','127.0.0.1']
 
 #Heroku: Update database configuration from $DATABASE_URL
 import dj_database_url
@@ -132,7 +132,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 #The URL to use when referring to static files (where they will be served from)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),]
 
 #Simplified Static file serving
 # https://warehouse.python.org/project/whitenoise/
