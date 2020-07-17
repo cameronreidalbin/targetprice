@@ -64,6 +64,10 @@ powerPackageLookup = [('1', 0, 'Small Toroidal'),('3', 0, 'EP7'),
                       (91,56, 'RM10'),(100,70,'EE25'),(102,0, 'EFD30'),(113,80, 'PQ2625'),
                       ('120',0, 'PQ2625'),(151,84, 'PQ3220'),(261,164, 'ETD34'),
                       (311, 245, 'PQ3230'),(343,244, 'ERL35'),(437,304, 'ETD39')]
+
+for package in powerPackageLookup:
+    image = img.imread('staticfiles/tr/'+ package[2] + '.png')
+    img.imsave('tr/static/tr/'+package[2]+'.png',image)
  
 def index(request):
     return render(request, 'tr/index.html')
@@ -134,7 +138,7 @@ def output(request):
     plt.ylabel('Price ($)')
     plt.savefig('tr/static/tr/graph.png')
 #    image = img.imread('tr/static/tr/' + package + '.png')
-    image = img.imread('staticfiles/tr/'+ package + '.png')
+#    image = img.imread('staticfiles/tr/'+ package + '.png')
     img.imsave('tr/static/tr/chosen.png',image)
  
     context = {'priceEstimate': priceEstimate, 'package': package, 'quantity': qc}
