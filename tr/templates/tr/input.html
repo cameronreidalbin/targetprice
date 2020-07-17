@@ -1,0 +1,27 @@
+<ul>
+<h1>Transformer Price Estimator</h1>
+
+<form action="/tr/output/" method="get">
+<label for="topology">Topology:</label>
+<select name="topology" id="topology">
+    <option value="AC/DC">AC/DC Flyback</option>
+    <option value="DC/DC">DC/DC Flyback</option>
+    <option value="DC/DC">Push-Pull</option>
+    <option value="DC/DC">Half-Bridge</option>
+    <option value="DC/DC">Full-Bridge</option>
+    </br>
+</select>
+</p>
+<label for="power">Output Power (W):</label>
+<input type="number" name="power">
+</p>
+<label for="quantity">Quantity:</label>
+<input type="number" id="quantity" name="quantity">
+</p>
+
+<br>
+<input type="submit" value="Submit">
+</form>
+</p>
+<a href="/tr/">Other Estimators</a>
+</ul>

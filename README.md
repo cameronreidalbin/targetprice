@@ -1,2 +1,1 @@
-# targetprice
-target price website
+# magneticsprice

@@ -1,0 +1,25 @@
+<ul>
+<h1>Common Mode Choke Price Estimator</h1>
+
+<form action="/cmc/output/" method="get">
+<label for="frequency">Problems below 500kHz?:</label>
+<select name="frequency" id="frequency">
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+    <option value="No">I don't know</option>
+    </br>
+</select>
+</p>
+<label for="current">Current (A):</label>
+<input type="number" step="0.01" name="current">
+</p>
+<label for="quantity">Quantity:</label>
+<input type="number" id="quantity" name="quantity">
+</p>
+
+<br>
+<input type="submit" value="Submit">
+</form>
+</p>
+<a href="/tr/">Other Estimators</a>
+</ul>
