@@ -133,7 +133,7 @@ def output(request):
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)')
     plt.savefig('tr/static/tr/graph.png')
-    image = img.imread(package + '.png')
+    image = img.imread('tr/'+package + '.png')
     img.imsave('tr/chosen.png',image)
  
     context = {'priceEstimate': priceEstimate, 'package': package, 'quantity': qc}
