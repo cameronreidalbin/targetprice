@@ -22,5 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('tr.urls')),
     path('tr/',include('tr.urls')),
-    path('cmc/',include('cmc.urls'))
+    path('cmc/',include('cmc.urls')),
+    path('lan/',include('lan.urls')),
+    path('ind/',include('ind.urls'))
 ]

@@ -40,6 +40,8 @@ DATABASES['default'].update(db_from_env)
 INSTALLED_APPS = [
     'tr.apps.TrConfig',
     'cmc.apps.CmcConfig',
+    'lan.apps.LanConfig',
+    'ind.apps.IndConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

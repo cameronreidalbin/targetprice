@@ -10,13 +10,7 @@ matplotlib.use('Agg')
 
 book = openpyxl.load_workbook('tr/Everyone Cleaned.xlsx')
 sheet = book['Sheet1']
- 
-def logisticPriceEstimate(quantity, power):
-    return 5/(1+math.exp(.00005*(quantity-5000))) + power/50
-
-def getDistance(m1,m2,q1,q2):
-    return ((m1-m2)**2 + (q1-q2)**2)**(1/2)
- 
+  
 bobbinList = [['EE13/6/6 10-Terminal, THT, Vertical', '14.73 max.', '14.73 max.', '15.24 max.'],
               ['EE16/7/5 10-Terminal EXT, THT, Horizontal', '17.5 max.', '20 max.', '14 max.'],
               ['EE20/10/6 (EF20) 10-Terminal EXT, THT, Vertical', '22.7 max.', '14.6 max.', '25.3 max.'],
@@ -65,6 +59,20 @@ powerPackageLookup = [('1', 0, 'Small Toroidal'),('3', 0, 'EP7'),
                       ('120',0, 'PQ2625'),(151,84, 'PQ3220'),(261,164, 'ETD34'),
                       (311, 245, 'PQ3230'),(343,244, 'ERL35'),(437,304, 'ETD39')]
 
+def quantityEstimate(quantity):
+    return 1.71 - .123*math.log(quantity)
+
+def regressionEstimate(quantity, size):
+    estimate = (2.5 + .000124*size)*quantityEstimate(quantity)
+    return estimate
+
+def getDistance(s1,s2,q1,q2):
+    return ((s1-s2)**2 + (q1-q2)**2)**(1/2)
+
+def adjustPrice(pInitial,qInitial,qFinal):
+    pFinal = pInitial*( quantityEstimate(qFinal) / quantityEstimate(qInitial) )
+    return pFinal
+
 for package in powerPackageLookup:
     image = img.imread('staticfiles/tr/'+ package[2] + '.png')
     img.imsave('tr/static/tr/'+package[2]+'.png',image)
@@ -97,45 +105,47 @@ def output(request):
             l = float(each[1][0:-4])
             w = float(each[2][0:-4])
             h = float(each[3][0:-4])
-    mc = l*w*h
+    sc = l*w*h
  
     #make price estimate based on similar parts
-    mm3, quantities, prices = [],[],[]
+    rowNums, similarPoints = [],[]
     distanceThreshold = 100
 
-    while len(quantities) < 5:
+    while len(rowNums) < 5:
         for rowNum in range(2,sheet.max_row+1):
-            m = int(sheet.cell(row=rowNum,column=7).value)
-            p = float(sheet.cell(row=rowNum,column=8).value)
-            q = sheet.cell(row=rowNum,column=9).value
-            newPoint = (m not in mm3) and (q not in quantities)
-            if getDistance(mc,m,qc,q) < distanceThreshold and newPoint == True:
-                mm3 += [m]
-                quantities += [q]
-                prices += [p]
+            s = int(sheet.cell(row=rowNum,column=7).value)
+            p = float(sheet.cell(row=rowNum,column=9).value)
+            q = sheet.cell(row=rowNum,column=8).value
+            if (getDistance(sc,s,qc,q) < distanceThreshold) and (rowNum not in rowNums):
+                rowNums += [rowNum]
+                similarPoints += [[q,p]]
         distanceThreshold += 100
         
+    similarPoints.sort(key=lambda x: x[1])
+    u = int(round(len(similarPoints)*.2,0))
+    l = int(round(len(similarPoints)*.1,0))
+    similarPoints = similarPoints[l:-u]
+
+    quantities,prices = [],[]
+    for point in similarPoints:
+        quantities += [point[0]]
+        prices += [point[1]]
    
-    graphMin, graphMax = min(quantities), qc + max(quantities)
-    graphQuantities = range(graphMin,graphMax,int(round((graphMax-graphMin)/6,0)))
+    graphQuantities = range( int(qc/10), int(qc*5), int(qc*(5-.1)/5) )
     quantities += graphQuantities
     for q in graphQuantities:
-        p = logisticPriceEstimate(q,power)*random.uniform(.75,1.25)
-        if p <= .35:
-            p = .35
+        p = regressionEstimate(q,sc)*random.uniform(.75,1.25)
         prices += [p]
- 
-    priceEstimate = statistics.median(prices)
-    v = statistics.median(quantities)
-    quantityDiscount = logisticPriceEstimate(qc,power) - logisticPriceEstimate(v,power)
-    priceEstimate = round(priceEstimate+quantityDiscount,2)
- 
+
     plt.clf()
     plt.plot(quantities, prices,'bo')
-    plt.plot(qc,priceEstimate,'r+',markersize=20)
     plt.title('Distributor Pricing for Similar Parts')
     plt.xlabel('Quantity')
-    plt.ylabel('Price ($)')
+    plt.ylabel('Price ($)') 
+
+    v = statistics.median(quantities) 
+    priceEstimate = round(adjustPrice(statistics.median(prices),v,qc),2)
+    plt.plot(qc,priceEstimate,'r+',markersize=20)
     plt.savefig('tr/static/tr/graph.png')
     image = img.imread('tr/static/tr/' + package + '.png')
 #    image = img.imread('staticfiles/tr/'+ package + '.png')

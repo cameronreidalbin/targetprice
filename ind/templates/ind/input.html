@@ -1,0 +1,30 @@
+<ul>
+<h1>Inductor Price Estimator</h1>
+
+<form action="/ind/output/" method="get">
+<label for="shield">Shielding:</label>
+<select name="shield" id="shield">
+    <option value="1">Shielded</option>
+    <option value="0">Unshielded</option>
+    </br>
+</select>
+</p>
+
+<label for="inductance">Inductance (uH):</label>
+<input type="number" step=".001" name="inductance">
+</p>
+
+<label for="current">Current (A):</label>
+<input type="number" step="0.01" name="current">
+</p>
+
+<label for="quantity">Quantity:</label>
+<input type="number" id="quantity" name="quantity">
+</p>
+
+<br>
+<input type="submit" value="Submit">
+</form>
+</p>
+<a href="/tr/">Other Estimators</a>
+</ul>

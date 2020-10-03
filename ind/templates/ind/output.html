@@ -1,0 +1,11 @@
+<ul>
+<h1>Inductor Price Estimator</h1>
+</br>
+Distributor pricing for a {{inductance}}uH, {{current}}A inductor at {{ quantity }} is around: <b>${{ priceEstimate }}</b>
+</p>
+{% load static %}
+{{picPath}}
+<img src="{% static "ind/graph.png" %}" alt="My image">
+</p>
+<a href="/ind/input">Back</a>
+</ul>

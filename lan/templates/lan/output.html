@@ -1,0 +1,11 @@
+<ul>
+<h1>LAN Price Estimator</h1>
+</br>
+Distributor pricing at {{ quantity }} is around: <b>${{ priceEstimate }}</b>
+</p>
+{% load static %}
+{{picPath}}
+<img src="{% static "lan/graph.png" %}" alt="My image">
+</p>
+<a href="/lan/input">Back</a>
+</ul>
