@@ -8,7 +8,7 @@ import matplotlib.image as img
 import matplotlib
 matplotlib.use('Agg')
 
-book = openpyxl.load_workbook('tr/Everyone Cleaned.xlsx')
+book = openpyxl.load_workbook('tr/Digikey Tr Cleaned.xlsx')
 sheet = book['Sheet1']
   
 bobbinList = [['EE13/6/6 10-Terminal, THT, Vertical', '14.73 max.', '14.73 max.', '15.24 max.'],
@@ -24,17 +24,10 @@ bobbinList = [['EE13/6/6 10-Terminal, THT, Vertical', '14.73 max.', '14.73 max.'
               ['EP10 8-Terminal, THT, Horizontal', '13.34 max.', '11.68 max.', '12.57 max.'],
               ['EP13 12-Terminal, SMT, Horizontal', '13.97 max.', '17.17 max.', '12.7 max.'],
               ['EPQ13 10-Terminal, SMT, Horizontal', '13.97 max.', '18.25 max.', '14.5 max.'],
-              ['EPX7', '10.16 max.', '9.14 max.', '12.32 max.'],
-              ['EPX9', '10.16 max.', '10.16 max.', '12.7 max.'],
               ['EPC13 10-Terminal, THT, Horizontal', '14.6 max.', '14.73 max.', '8.5 max.'],
               ['EPC17 10-Terminal, THT, Horizontal', '19 max.','18.5 max.', '12.5 max.'],
               ['EPC40 16-Terminal EXT, THT, Horizontal', '41.91 max.', '53.98 max.', '26.9 max.'],
               ['EPW15 9-Terminal EXT, SMT, Horizontal', '15.8 max.', '26.5 max.', '13.5 max.'],
-              ['ER9.5 8-Terminal, SMT, Vertical', '10 max.','12.21 max.', '5.97 max.'],
-              ['ER11.5 12-Terminal, SMT, Vertical', '12.95 max.', '12.85 max.', '6.35 max.'],
-              ['ER14.5 12-Terminal, SMT, Vertical', '16 max.','16.8 max.', '7.62 max.'],
-              ['ER28/14 12-Terminal, THT, Horizontal', '31 max.', '31 max.','25 max.'],
-              ['ERL35 14-Terminal, THT, Horizontal', '36.5 max.','44 max.','28.5 max.'],
               ['ETD34 14-Terminal, THT, Horizontal', '39.6 max.', '43.18 max.', '30.48 max.'],
               ['ETD39 16-Terminal, THT, Horizontal', '49 max.','41.9 max.', '31.75 max.'],
               ['PQ2016 14-Terminal EXT, THT, Vertical', '23.9 max.', '27.58 max.', '25.2 max.'],
@@ -48,8 +41,7 @@ bobbinList = [['EE13/6/6 10-Terminal, THT, Vertical', '14.73 max.', '14.73 max.'
               ['RM8 10-Terminal EXT, THT, Vertical', '24.64 max.', '24.64 max.', '17.32 max.'],
               ['RM10 12-Terminal, THT, Vertical', '26.16 max.', '26.16 max.', '19.05 max.']]
  
-powerPackageLookup = [('1', 0, 'Small Toroidal'),('3', 0, 'EP7'),
-                      ('4', 0,'EPX7'),('6',0, 'EPX9'),('6', 0,'RM4'),
+powerPackageLookup = [('1', 0, 'Small Toroidal'),('3', 0, 'EP7'),('6', 0,'RM4'),
                       ('8',0, 'EP10'),('8', 0,'EPC13'),('10', 0,'RM5'),('14', 0,'EFD15'),
                       ('14', 0,'EP13'),(15,7,'EE13'),('17', 0,'EPQ13'),('19', 0,'RM6'),
                       (20,10,'EE16'),('22', 0,'EPC17'),(25,12, 'EPW15'),(38,26, 'EFD20'),
@@ -61,13 +53,6 @@ powerPackageLookup = [('1', 0, 'Small Toroidal'),('3', 0, 'EP7'),
 
 def quantityEstimate(quantity):
     return 1.71 - .123*math.log(quantity)
-
-def regressionEstimate(quantity, size):
-    estimate = (2.5 + .000124*size)*quantityEstimate(quantity)
-    return estimate
-
-def getDistance(s1,s2,q1,q2):
-    return ((s1-s2)**2 + (q1-q2)**2)**(1/2)
 
 def adjustPrice(pInitial,qInitial,qFinal):
     pFinal = pInitial*( quantityEstimate(qFinal) / quantityEstimate(qInitial) )
@@ -84,9 +69,12 @@ def input(request):
     return render(request, 'tr/input.html')
  
 def output(request):
+    #user inputs
     topology = request.GET['topology']
     power = int(request.GET['power'])
     qc = int(request.GET['quantity'])
+    if qc > 100000:
+        qc = 100000
  
     #Find package by power
     if topology == 'AC/DC':
@@ -99,6 +87,7 @@ def output(request):
             package = each[2]
             chosen = True 
  
+
     #get dimensions from package    
     for each in bobbinList:
         if package in each[0]:
@@ -106,46 +95,67 @@ def output(request):
             w = float(each[2][0:-4])
             h = float(each[3][0:-4])
     sc = l*w*h
+
  
-    #make price estimate based on similar parts
+    #choose most similar points
     rowNums, similarPoints = [],[]
     distanceThreshold = 100
 
-    while len(rowNums) < 5:
+    while len(rowNums) < 10:
         for rowNum in range(2,sheet.max_row+1):
             s = int(sheet.cell(row=rowNum,column=7).value)
             p = float(sheet.cell(row=rowNum,column=9).value)
             q = sheet.cell(row=rowNum,column=8).value
-            if (getDistance(sc,s,qc,q) < distanceThreshold) and (rowNum not in rowNums):
-                rowNums += [rowNum]
-                similarPoints += [[q,p]]
+            if (sc-s < distanceThreshold) and (rowNum not in rowNums):
+                if qc/5 <= q <= qc*2:
+                    rowNums += [rowNum]
+                    similarPoints += [[q,p]]
         distanceThreshold += 100
         
-    similarPoints.sort(key=lambda x: x[1])
-    u = int(round(len(similarPoints)*.2,0))
+    similarPoints.sort(key=lambda x: x[1]*x[1]*x[0])
+    u = int(round(len(similarPoints)*.3,0))
     l = int(round(len(similarPoints)*.1,0))
     similarPoints = similarPoints[l:-u]
+    similarPoints.sort(key=lambda x: x[1])
+    similarPoints = similarPoints[:-l]
 
+
+    #create points for graph
     quantities,prices = [],[]
     for point in similarPoints:
         quantities += [point[0]]
         prices += [point[1]]
+    priceMedian = statistics.median(prices)
+    quantityMedian = statistics.median(quantities)
    
-    graphQuantities = range( int(qc/10), int(qc*5), int(qc*(5-.1)/5) )
+    graphQuantities = range( int(qc/10), int(qc*2), int(qc*(2-.1)/5) )
     quantities += graphQuantities
     for q in graphQuantities:
-        p = regressionEstimate(q,sc)*random.uniform(.75,1.25)
+        p = adjustPrice(priceMedian,quantityMedian,q)*random.uniform(.75,1.25)
         prices += [p]
 
+
+    #create price estimates and likely range
+    priceEstimate = round(adjustPrice(priceMedian,quantityMedian,qc),2)
+
+    xs = range(int(qc/10),int(qc*2),100)
+    eL,eM,eH = [],[],[]
+    for x in xs:
+        eL += [adjustPrice(priceMedian,quantityMedian,x)/1.5]
+        eM += [adjustPrice(priceMedian,quantityMedian,x)]
+        eH += [adjustPrice(priceMedian,quantityMedian,x)*1.5]
+
+
+    #plot all that bullshit    
     plt.clf()
     plt.plot(quantities, prices,'bo')
-    plt.title('Distributor Pricing for Similar Parts')
+    plt.plot(qc,priceEstimate,'r+',markersize=20)
+    plt.plot(xs,eM,'b--')
+    plt.fill_between(xs,eL,eH, facecolor = 'blue', alpha = .25)
+    plt.title('Price of Similar Parts')
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)') 
 
-    v = statistics.median(quantities) 
-    priceEstimate = round(adjustPrice(statistics.median(prices),v,qc),2)
-    plt.plot(qc,priceEstimate,'r+',markersize=20)
     plt.savefig('tr/static/tr/graph.png')
     image = img.imread('tr/static/tr/' + package + '.png')
 #    image = img.imread('staticfiles/tr/'+ package + '.png')

@@ -17,72 +17,97 @@ def getDistance(featureSet1, featureSet2):
     return distance
 
 def quantityEstimate(quantity):
-    return .98 - .07*math.log(quantity)
-
-def regressionEstimate(shield,inductance,current,quantity):
-    estimate = (.79 + .2*shield + .000085*inductance + .035*current)*quantityEstimate(quantity)
-    return estimate
+    return 1.5*quantity**(-.15)
 
 def adjustPrice(pInitial,qInitial,qFinal):
     pFinal = pInitial * (quantityEstimate(qFinal)/quantityEstimate(qInitial))
-    return pFinal
-
-selectedFeatures = [0,0,0,0,0,0,0,0,0,0] 
+    return pFinal 
  
 def input(request):
     return render(request, 'ind/input.html')
  
 def output(request):
-    chosenShield = int(request.GET['shield'])
-    chosenInductance = float(request.GET['inductance'])
-    chosenCurrent = float(request.GET['current'])
-    chosenVolume = int(request.GET['quantity'])
- 
-    similarPoints = []
-    t = 1
-    while len(similarPoints) < 5:
+    #user inputs
+    sc = int(request.GET['shield'])
+    lc = float(request.GET['inductance'])
+    ic = float(request.GET['current'])
+    qc = int(request.GET['quantity'])
+    if qc > 100000:
+        qc = 100000
+
+
+    #choose most similar parts
+    rowNums,similarPoints = [],[]
+    distanceThreshold = 1
+    while len(similarPoints) < 10:
         for rowNum in range(2,sheet.max_row+1):
-            shield = sheet.cell(row=rowNum,column=7).value
-            inductance = sheet.cell(row=rowNum,column=9).value
-            current = sheet.cell(row=rowNum,column=10).value
-            volume = sheet.cell(row=rowNum,column=11).value
-            price = sheet.cell(row=rowNum,column=12).value
-            point = [volume,price]
-            if (point not in similarPoints) and (shield==chosenShield):
-                if chosenCurrent/t <= current <= chosenCurrent*t:
-                    if chosenInductance/t <= inductance <= chosenInductance*t:
-                        if chosenVolume/10 <= volume <= chosenVolume*5:
-                            similarPoints += [point]
-        t += 1
+            s = sheet.cell(row=rowNum,column=7).value
+            l = sheet.cell(row=rowNum,column=9).value
+            i = sheet.cell(row=rowNum,column=10).value
+            q = sheet.cell(row=rowNum,column=11).value
+            p = sheet.cell(row=rowNum,column=12).value
+            if (rowNum not in rowNums) and (s==sc):
+                if ic/distanceThreshold <= i <= ic*distanceThreshold:
+                    if lc/distanceThreshold <= l <= lc*distanceThreshold:
+                        if qc/5 <= q <= qc*2:
+                            rowNums += [rowNum]
+                            similarPoints += [[q,p]]
+        distanceThreshold += 1
 
-    similarPoints.sort(key = lambda x: x[1])
-    u = int(round(len(similarPoints)*.3,0))
-    l = int(round(len(similarPoints)*.1,0))
+    similarPoints.sort(key = lambda x: x[1]*x[1]*x[0])
+    u = int(len(similarPoints)*.3)
+    l = int(len(similarPoints)*.1)
     similarPoints = similarPoints[l:-u]
+    similarPoints.sort(key=lambda x: x[1])
+    similarPoints = similarPoints[:-l]
 
-    volumes,prices = [],[]
+
+    #create points for graph
+    quantities,prices = [],[]
     for point in similarPoints:
-        volumes += [point[0]]
+        quantities += [point[0]]
         prices += [point[1]]
+    priceMedian = statistics.median(prices)
+    quantityMedian = statistics.median(quantities)
 
-    graphQuantities = range( int(chosenVolume/10), int(chosenVolume*5), int(chosenVolume*(5-.1)/5) )
-    volumes += graphQuantities
-    for each in graphQuantities:
-        p = regressionEstimate(chosenShield,chosenInductance,chosenCurrent,each)*random.uniform(.75,1.25)
+    graphQuantities = range( int(qc/10), int(qc*2), int(qc*(2-.1)/5) )
+    quantities += graphQuantities
+    for q in graphQuantities:
+        p = adjustPrice(priceMedian,quantityMedian,q)*random.uniform(.75,1.25)
         prices += [p]
 
-    v = statistics.median(volumes)
-    priceEstimate = round(adjustPrice(statistics.median(prices),v,chosenVolume), 2)
+
+    #create price estimate and likely range
+    priceEstimate = round(adjustPrice(priceMedian,quantityMedian,qc), 2)
+
+    xs = range(int(qc/10),int(qc*2),100)
+    eL,eM,eH = [],[],[]
+    for x in xs:
+        eL += [adjustPrice(priceMedian,quantityMedian,x)/1.5]
+        eM += [adjustPrice(priceMedian,quantityMedian,x)]
+        eH += [adjustPrice(priceMedian,quantityMedian,x)*1.5]    
  
     plt.clf()
-    plt.plot(volumes,prices,'bo')
-    plt.plot(chosenVolume,priceEstimate,'r+',markersize=20)
+    plt.plot(quantities,prices,'bo')
+    plt.plot(qc,priceEstimate,'r+',markersize=20)
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)')
     plt.title('Price of Similar Parts')
+
+
+    #plot all that bullshit    
+    plt.clf()
+    plt.plot(quantities, prices,'bo')
+    plt.plot(qc,priceEstimate,'r+',markersize=20)
+    plt.plot(xs,eM,'b--')
+    plt.fill_between(xs,eL,eH, facecolor = 'blue', alpha = .25)
+    plt.title('Price of Similar Parts')
+    plt.xlabel('Quantity')
+    plt.ylabel('Price ($)')
+
     plt.savefig('ind/static/ind/graph.png')
 #    image = img.imread('ind/static/ind/' + size + '.png')
 #    img.imsave('ind/static/ind/chosen.png',image)
 
-    context = {'priceEstimate': priceEstimate, 'quantity': chosenVolume, 'inductance': chosenInductance, 'shield': chosenShield, 'current': chosenCurrent}
+    context = {'priceEstimate': priceEstimate, 'quantity': qc, 'inductance': lc, 'shield': sc, 'current': ic}
     return render(request, 'ind/output.html', context)

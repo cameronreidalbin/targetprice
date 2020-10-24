@@ -19,10 +19,6 @@ def getDistance(featureSet1, featureSet2):
 def quantityEstimate(quantity):
     return 4.2*quantity**(-.215)
 
-def regressionEstimate(fs, quantity):
-    estimate = (2.19 + 1.31*fs[2] + .77*fs[3] + 1.31*fs[4] + 1.94*fs[5] - .61*fs[9])*quantityEstimate(quantity)
-    return estimate
-
 def adjustPrice(pInitial,qInitial,qFinal):
     pFinal = pInitial * (quantityEstimate(qFinal)/quantityEstimate(qInitial))
     return pFinal
@@ -33,11 +29,15 @@ def input(request):
     return render(request, 'lan/input.html')
  
 def output(request):
+    #user inputs
+    selectedFeatures = [0,0,0,0,0,0,0,0,0,0] 
     b = str(request.GET['btLevel'])
     p = str(request.GET['poeLevel'])
     d = str(request.GET['discrete'])
-    q = int(request.GET['quantity'])
-    
+    qc = int(request.GET['quantity'])
+    if qc > 100000:
+        qc = 100000    
+
     if b == '10':
         selectedFeatures[0] = 1
     if b == '100':
@@ -59,6 +59,8 @@ def output(request):
     if d == 'discrete':
         selectedFeatures[9] = 1
  
+
+    #choose most similar points
     similarPoints = []
     distanceThreshold = 0
  
@@ -78,39 +80,57 @@ def output(request):
             price = float(sheet.cell(row=rowNum,column=18).value)
             dpFeatures = [bt10,bt100,bt1G,bt25G,bt5G,bt10G,poe,poep,poepp,discrete]
             if getDistance(dpFeatures,selectedFeatures) == distanceThreshold:
-                if q/5 <= quantity <= q*2:
-                    similarPoints += [[rowNum,quantity,price]]
+                if qc/5 <= quantity <= qc*2:
+                    similarPoints += [[quantity,price]]
         distanceThreshold += 1
 
-    similarPoints.sort(key = lambda x: x[2])
+    similarPoints.sort(key = lambda x: x[0]*x[1]*x[1])
     u = int(round(len(similarPoints)*.3,0))
     l = int(round(len(similarPoints)*.1,0))
     similarPoints = similarPoints[l:-u]
+    similarPoints.sort(key=lambda x: x[1])
+    similarPoints = similarPoints[:-l]
 
-    quantities = []
-    prices = []
-    for each in similarPoints:
-        quantities += [each[1]]
-        prices += [each[2]]
 
-    graphQuantities = range( int(q/5), int(q*2), int((q*2-q/5)/5) )
+    #create points for graph
+    quantities, prices = [], []
+    for point in similarPoints:
+        quantities += [point[0]]
+        prices += [point[1]]
+    priceMedian = statistics.median(prices)
+    quantityMedian = statistics.median(quantities)
+
+    graphQuantities = range( int(qc/10), int(qc*2), int(qc*(2-.1)/5) )
     quantities += graphQuantities
-    for each in graphQuantities:
-        p = regressionEstimate(selectedFeatures,each)*random.uniform(.75,1.25)
+    for q in graphQuantities:
+        p = adjustPrice(priceMedian,quantityMedian,q)*random.uniform(.75,1.25)
         prices += [p]
 
-    v = statistics.median(quantities)
-    priceEstimate = round(adjustPrice(statistics.median(prices),v,q), 2)
- 
+
+    #create price estimate and likely range
+    priceEstimate = round(adjustPrice(priceMedian,quantityMedian,qc), 2)
+
+    xs = range(int(qc/10),int(qc*2),100)
+    eL,eM,eH = [],[],[]
+    for x in xs:
+        eL += [adjustPrice(priceMedian,quantityMedian,x)/1.5]
+        eM += [adjustPrice(priceMedian,quantityMedian,x)]
+        eH += [adjustPrice(priceMedian,quantityMedian,x)*1.5]
+
+
+    #plot all that bullshit    
     plt.clf()
-    plt.plot(quantities,prices,'bo')
-    plt.plot(q,priceEstimate,'r+',markersize=20)
-    plt.xlabel('Quantity')
-    plt.ylabel('Price ($)')
+    plt.plot(quantities, prices,'bo')
+    plt.plot(qc,priceEstimate,'r+',markersize=20)
+    plt.plot(xs,eM,'b--')
+    plt.fill_between(xs,eL,eH, facecolor = 'blue', alpha = .25)
     plt.title('Price of Similar Parts')
+    plt.xlabel('Quantity')
+    plt.ylabel('Price ($)') 
+
     plt.savefig('lan/static/lan/graph.png')
 #    image = img.imread('lan/static/lan/' + size + '.png')
 #    img.imsave('lan/static/lan/chosen.png',image)
 
-    context = {'priceEstimate': priceEstimate, 'quantity': q, 'bt': b, 'poe':p, 'discrete': d}
+    context = {'priceEstimate': priceEstimate, 'quantity': qc, 'bt': b, 'poe':p, 'discrete': d}
     return render(request, 'lan/output.html', context)
