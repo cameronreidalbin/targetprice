@@ -24,5 +24,6 @@ urlpatterns = [
     path('tr/',include('tr.urls')),
     path('cmc/',include('cmc.urls')),
     path('lan/',include('lan.urls')),
-    path('ind/',include('ind.urls'))
+    path('ind/',include('ind.urls')),
+    path('pnsearch/',include('pnsearch.urls'))
 ]

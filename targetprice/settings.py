@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'cmc.apps.CmcConfig',
     'lan.apps.LanConfig',
     'ind.apps.IndConfig',
+    'pnsearch.apps.PnsearchConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
