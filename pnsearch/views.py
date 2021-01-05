@@ -27,7 +27,7 @@ def grabPrices(pn):
             margin = 1
        
         partNumber = dr.select('.td-part-number > a')
-        if partNumber[0].getText() == part:
+        if part.upper() in partNumber[0].getText().upper():
             quotes = dr.select('.table-list > .multi-price')
            
             for q in quotes:
@@ -74,7 +74,7 @@ def createPowerTrendLine(quantities,prices,chosenQuantity):
         x += [i]
         y += [a*(i**b)]
    
-    priceEstimate = round(a*(chosenQuantity**b),2)
+    priceEstimate = round(a*(chosenQuantity**b),3)
    
     return x,y,priceEstimate
 
