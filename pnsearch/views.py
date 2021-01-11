@@ -27,7 +27,7 @@ def grabPrices(pn):
             margin = 1
        
         partNumber = dr.select('.td-part-number > a')
-        if part.upper() in partNumber[0].getText().upper():
+        if part.upper().replace('-','') in partNumber[0].getText().upper().replace('-',''):
             quotes = dr.select('.table-list > .multi-price')
            
             for q in quotes:
