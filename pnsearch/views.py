@@ -70,7 +70,10 @@ def createPowerTrendLine(quantities,prices,chosenQuantity):
     b,lna = np.polyfit(logQuantities,logPrices,1)
     a = np.exp(lna)
     x,y = [],[]
-    for i in range(1,int(chosenQuantity*1.5),int(chosenQuantity/100)):
+    bitSize = int(chosenQuantity/100)
+    if bitSize == 0:
+        bitSize = 1
+    for i in range(1,int(chosenQuantity*1.5),bitSize):
         x += [i]
         y += [a*(i**b)]
    
