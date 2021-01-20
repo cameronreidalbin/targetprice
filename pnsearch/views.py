@@ -57,7 +57,7 @@ def findBestPrices(points,chosenQuantity):
 
 
 
-def createPowerTrendLine(quantities,prices,chosenQuantity):    
+def createPowerTrendLine(quantities,prices,chosenQuantity,graphQuantity):    
     #y = ax^b
     #ln(y) = b*(ln(x)) + ln(a)
     logQuantities,logPrices = [],[]
@@ -70,10 +70,8 @@ def createPowerTrendLine(quantities,prices,chosenQuantity):
     b,lna = np.polyfit(logQuantities,logPrices,1)
     a = np.exp(lna)
     x,y = [],[]
-    bitSize = int(chosenQuantity/100)
-    if bitSize == 0:
-        bitSize = 1
-    for i in range(1,int(chosenQuantity*1.5),bitSize):
+
+    for i in range(1,int(graphQuantity*1.5),int(graphQuantity/100)):
         x += [i]
         y += [a*(i**b)]
    
@@ -92,8 +90,13 @@ def output(request):
     #user inputs
     pn = str(request.GET['pn'])
     chosenQuantity = int(request.GET['quantity'])
+    if chosenQuantity < 100:
+        graphQuantity = 100
+    else:
+        graphQuantity = chosenQuantity
+
     points = grabPrices(pn)
-    quantities,prices = findBestPrices(points,chosenQuantity)
+    quantities,prices = findBestPrices(points,graphQuantity)
 
     if len(quantities) <= 1:
         xTrend,yTrend,priceEstimate = [],[],0
@@ -101,7 +104,7 @@ def output(request):
         page = 'pnsearch/output - error no data.html'
 
     if len(quantities) > 1:
-        xTrend,yTrend,priceEstimate = createPowerTrendLine(quantities,prices,chosenQuantity)
+        xTrend,yTrend,priceEstimate = createPowerTrendLine(quantities,prices,chosenQuantity,graphQuantity)
         extraX, extraY = [],[]
         for i in range(len(xTrend)):
             if i%int(len(xTrend)/5) == 0 and xTrend[i]<25000:
