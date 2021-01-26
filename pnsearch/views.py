@@ -21,9 +21,13 @@ def grabPrices(pn):
     for dr in distributorResults:
 
         volumeDistributors = ['Arrow Electronics','Avnet Americas','Avnet Europe','Avnet Asia','Future Electronics','C1C Co., Ltd.']
+        directDistributors = ['Coilcraft Direct']
         distributorName = dr.get('data-distributorname')
-        margin = .25
-        if distributorName not in volumeDistributors:
+        if distributorName in volumeDistributors:
+            margin = .25
+        if distributorName in directDistributors:
+            margin = 0
+        else:
             margin = 1
        
         partNumber = dr.select('.td-part-number > a')
