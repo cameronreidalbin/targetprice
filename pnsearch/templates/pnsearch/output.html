@@ -1,10 +1,15 @@
 <ul>
 <h1>Find Target Price By PN</h1>
-{% load static %}
-Direct pricing for {{ pn }} at {{ quantity }} is around: <b>${{ priceEstimate }}</b>
+
+<p>
+Direct price for <b>{{pn}}</b> at <b>{{quantity}}</b> is <b>${{pnPrice}}</b>
 </p>
+
+<p>
+{% load static %}
 {{picPath}}
 <img src="{% static "pnsearch/graph.png" %}" alt="My image">
 </p>
+
 <a href="/pnsearch/input">Back</a>
 </ul>
