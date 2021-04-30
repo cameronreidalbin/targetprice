@@ -55,7 +55,7 @@ def grabPrices(pn):
 def findBestPrices(points,chosenQuantity):
     points.sort(key = lambda x: x[0])
     currentLowest = 999
-    quantities,prices = [],[]
+    quantities,prices,keyPrices = [],[],[]
 
     for p in points:
         if p[0] <= chosenQuantity*1.5:
@@ -63,11 +63,12 @@ def findBestPrices(points,chosenQuantity):
                 quantities += [p[0]]
                 prices += [p[1]]
                 currentLowest = p[1]
+                keyPrices += [ str(p[0]) + ' - ' + p[2] + ' - Distribution Price = $' + str(round(p[3],2)) + ' - Direct Price = $' + str(round(p[1],2)) ]
             else:
                 quantities += [p[0]]
                 prices += [currentLowest]
 
-    return quantities,prices
+    return quantities,prices,keyPrices
 
 
 
@@ -112,7 +113,7 @@ def getBournsCross(pn):
 
 def plotStuff(pn,chosenQuantity,color):
     points = grabPrices(pn)
-    quantities,prices = findBestPrices(points,chosenQuantity)
+    quantities,prices,keyPrices = findBestPrices(points,chosenQuantity)
 
     if len(quantities) <= 1:
         xTrend,yTrend,priceEstimate = [],[],0
@@ -131,7 +132,7 @@ def plotStuff(pn,chosenQuantity,color):
     plt.plot(quantities,prices,c=color,ls='None',marker='o')
     plt.plot(xTrend,yTrend,c=color,ls='--',marker='None',label=pn)
     plt.plot(chosenQuantity,priceEstimate,c=color,marker='+',markerSize=20)
-    return page,priceEstimate
+    return page,priceEstimate,keyPrices
 
  
 def input(request):
@@ -153,7 +154,7 @@ def output(request):
     plt.title('Direct Price Adjusted Quotes')
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)') 
-    page,pnPrice = plotStuff(pn,graphQuantity,'red')
+    page,pnPrice,keyPrices = plotStuff(pn,graphQuantity,'red')
 
     if magneticsCrosses == 1:
         bournsCross = getBournsCross(pn)
@@ -163,8 +164,13 @@ def output(request):
     plt.legend(loc='best')
     plt.ylim(0)
 
+    if len(keyPrices) > 2:
+        keyPrices = keyPrices[-3:]
+    else:
+        keyPrices = None        
+
     plt.savefig('pnsearch/static/pnsearch/graph.png')
-    context = {'quantity': graphQuantity, 'pn': pn, 'pnPrice': pnPrice}
+    context = {'quantity': graphQuantity, 'pn': pn, 'pnPrice': pnPrice, 'keyPrices': keyPrices}
     return render(request, page, context)
 
 

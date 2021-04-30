@@ -1,14 +1,36 @@
 <ul>
 <h1>Find Target Price By PN</h1>
 
+<hr>
+
+{% block directpricing %}
 <p>
-Direct price for <b>{{pn}}</b> at <b>{{quantity}}</b> is <b>${{pnPrice}}</b>
+    <h2>Expected Direct Pricing</h2>
+    Direct price for <b>{{pn}}</b> at <b>{{quantity}}</b> is <b>${{pnPrice}}</b>
 </p>
 
 <p>
-{% load static %}
-{{picPath}}
-<img src="{% static "pnsearch/graph.png" %}" alt="My image">
+    {% load static %}
+    {{picPath}}
+    <img src="{% static "pnsearch/graph.png" %}" alt="My image">
+</p>
+{% endblock %}
+
+<hr>
+
+{% block distributionpricing %}
+<p>
+    <h2>Key Distribution Prices</h2>
+    {% if keyPrices %}
+    <ul>
+        {% for price in keyPrices %}
+            <li>{{ price }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+        Not enough distribution prices found
+    {% endif %}
+{% endblock %}
 </p>
 
 <a href="/pnsearch/input">Back</a>
