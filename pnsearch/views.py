@@ -14,7 +14,7 @@ matplotlib.use('Agg')
 
 
 def grabPrices(pn):
-    part = str(pn)
+    part = str(pn).upper().replace('-','')
     res = requests.get('http://www.oemstrade.com/search/' + str(part))
     soup = bs4.BeautifulSoup(res.text, 'lxml')
     points = []
@@ -33,12 +33,12 @@ def grabPrices(pn):
             margin = 1.25
 
         if distributorName not in brokers:
-            WurthPNs = ['744','742','750','760','768']
+            WurthPNs = ['744','742','750','760','768','691']
             if pn[0:3] in WurthPNs:
                 margin += .75
        
             partNumber = dr.select('.td-part-number > a')
-            if part.upper().replace('-','') in partNumber[0].getText().upper().replace('-',''):
+            if part in partNumber[0].getText().upper().replace('-',''):
                 quotes = dr.select('.table-list > .multi-price')
            
                 for q in quotes:
@@ -96,23 +96,46 @@ def createPowerTrendLine(quantities,prices,chosenQuantity):
 
 
 
-def getBournsCross(pn):
-    part = str(pn)
-    html = 'https://www.bourns.com/xref-search-results?PART='+part+'&ST=BeginsWith'
-    try:
-        res = requests.get(html)
-        soup = bs4.BeautifulSoup(res.text, 'lxml')
-        crossText = soup.find(id="C002_lblLinkText").getText()
-        crossRegex = re.compile('equivalent is (.*)')
-        cross = crossRegex.search(crossText).group(1)
-        return cross
-    except:
-        return None
+def getDatabaseCrosses(pn):
+    wb = openpyxl.load_workbook('pnsearch/Inductor Cross List.xlsx')
+    sheet = wb['inductors']
+    pn = str(pn).upper().replace('-','')
+    potentialMatches = []
+    for colNum in range(1,6):
+        for rowNum in range(2,sheet.max_row+1):
+            cellPN = str(sheet.cell(row=rowNum,column=colNum).value).upper().replace('-','')
+            if str(cellPN)[0:3] == str(pn)[0:3]:
+                potentialMatches += [[cellPN,rowNum,colNum]]
+
+    matchRequirement = 3
+    newMatchList = ['']
+    while len(newMatchList) > 0 and matchRequirement < len(pn):
+        matchRequirement += 1
+        newMatchList = []
+        for match in potentialMatches:
+            if match[0][:matchRequirement] == pn[:matchRequirement]:
+                newMatchList += [match]
+    
+    if len(newMatchList) > 0:
+        finalMatch = newMatchList[0]
+        crosses = [pn]
+        for x in range(1,5):
+            cross = str(sheet.cell(row=finalMatch[1],column=x).value).upper().replace('-','')
+            if cross != '-' and cross != None and cross not in crosses:
+                crosses += [cross]
+        return crosses
+    else:
+        return []
 
 
 
-def plotStuff(pn,chosenQuantity,color):
-    points = grabPrices(pn)
+
+def plotStuff(pn,chosenQuantity,color,estimateLabel=False):
+    pn = str(pn).upper().replace('-','')
+    if pn[-7:] == ' FAMILY':
+        points = grabPrices(pn[:-7])
+    else:
+        points = grabPrices(pn)
     quantities,prices,keyPrices = findBestPrices(points,chosenQuantity)
 
     if len(quantities) <= 1:
@@ -132,6 +155,9 @@ def plotStuff(pn,chosenQuantity,color):
     plt.plot(quantities,prices,c=color,ls='None',marker='o')
     plt.plot(xTrend,yTrend,c=color,ls='--',marker='None',label=pn)
     plt.plot(chosenQuantity,priceEstimate,c=color,marker='+',markerSize=20)
+    if estimateLabel == True:
+        plt.annotate((chosenQuantity,'$'+str(priceEstimate)),(chosenQuantity,priceEstimate),textcoords="offset points",xytext=(0,10),color=color)
+
     return page,priceEstimate,keyPrices
 
  
@@ -142,7 +168,7 @@ def input(request):
 
 def output(request):
     #user inputs
-    pn = str(request.GET['pn'])
+    pn = str(request.GET['pn']).upper().replace('-','')
     chosenQuantity = int(request.GET['quantity'])
     magneticsCrosses = int(request.GET['magneticsCrosses'])
     if chosenQuantity < 100:
@@ -154,12 +180,15 @@ def output(request):
     plt.title('Direct Price Adjusted Quotes')
     plt.xlabel('Quantity')
     plt.ylabel('Price ($)') 
-    page,pnPrice,keyPrices = plotStuff(pn,graphQuantity,'red')
+    page,pnPrice,keyPrices = plotStuff(pn,graphQuantity,'red',True)
 
     if magneticsCrosses == 1:
-        bournsCross = getBournsCross(pn)
-        if bournsCross != None:
-            plotStuff(bournsCross,chosenQuantity,'blue') 
+        crosses = getDatabaseCrosses(pn)
+        colors = ['red','blue','green','orange','purple']
+        if len(crosses) > 0:
+            numCrosses = min(4,len(crosses))
+            for x in range(1,numCrosses):
+                plotStuff(crosses[x],chosenQuantity,colors[x])
 
     plt.legend(loc='best')
     plt.ylim(0)
